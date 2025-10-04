@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Owner Dashboard</title>
+<style>
+body {
+  font-family: 'Poppins', sans-serif;
+  background: #f4f6f9;
+  margin: 0;
+  display: flex;
+}
+.sidebar {
+  width: 220px;
+  background: #2c3e50;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  height: 100vh;
+}
+.sidebar h2 { text-align: center; margin-bottom: 20px; }
+.sidebar a {
+  color: white;
+  text-decoration: none;
+  padding: 10px;
+  border-radius: 6px;
+  margin: 5px 0;
+  display: block;
+}
+.sidebar a:hover { background: #3498db; }
+.main {
+  flex: 1;
+  padding: 20px;
+}
+.topbar {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
+  gap: 15px;
+}
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  text-align: center;
+}
+.card h3 { color: #3498db; margin-bottom: 10px; }
+.logout {
+  margin-top: auto;
+  text-align: center;
+}
+.logout a {
+  background: red;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+}
+</style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Owner</h2>
+    <a href="#">📊 Dashboard</a>
+<a href="admin-help.html">🛠 Help Desk</a>
+    <a href="admin.html">🧑‍💼 Go to Admin Dashboard</a>
+    <a href="pool.html">🎱 Pool Game</a>
+   <a href="aviator.html">🎱 Aviator Game</a>
+    <div class="logout">
+      <a href="login.html">Logout</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h1>Welcome, Denis (Owner)</h1>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <h3>Total Users</h3>
+        <p>200</p>
+      </div>
+      <div class="card">
+        <h3>Active Games</h3>
+        <p>25</p>
+      </div>
+      <div class="card">
+        <h3>Total Profit</h3>
+        <p>KES 5,600</p>
+      </div>
+      <div class="card">
+        <h3>Support Requests</h3>
+        <p>12</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

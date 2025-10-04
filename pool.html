@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Denis — Two Player Predictive Pool</title>
+<style>
+  :root{
+    --felt:#0d6b35;
+    --rail:#5a3d24;
+    --panel:#fff8;
+  }
+{
+  html,body{height:100%;margin:0;font-family:Inter,Arial,sans-serif;background:#07120b;color:#fff}
+  .wrap{display:flex;gap:18px;padding:18px;align-items:flex-start;justify-content:center}
+  canvas{border-radius:14px;border:12px solid var(--rail);box-shadow:0 18px 60px rgba(0,0,0,0.7);background:var(--felt)}
+  .panel{width:320px;background:var(--panel);color:#062018;border-radius:10px;padding:12px;box-shadow:0 8px 30px rgba(0,0,0,0.5)}
+  h3{margin:6px 0 8px;color:#043}
+  .muted{font-size:13px;color:#234;margin-top:6px}
+  .controls{display:flex;gap:8px;margin-top:8px}
+  button{padding:8px;border-radius:8px;border:0;cursor:pointer;font-weight:700}
+  .btn-primary{background:#1e8cff;color:white}
+  .small{font-size:12px;color:#345;margin-top:10px}
+  .scoreboard{margin-top:12px;padding:8px;background:#fff2;border-radius:8px;font-size:14px}
+  .turn{font-weight:bold;color:#0a4}
+  table{width:100%;font-size:13px;border-collapse:collapse}
+  td,th{padding:6px;border-bottom:1px solid rgba(0,0,0,0.06)}
+  .legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .legend span{padding:6px 8px;border-radius:6px;background:#fff2;color:#062018;font-weight:700}
+</style>
+</head>
+<body><body>
+  <h1>🎱 Play Pool</h1>
+  <canvas id="poolTable" width="800" height="400"></canvas>
+  <a href="admin.html">Go to Admin Dashboard</a>
+
+  <script>
+    const canvas = document.getElementById("poolTable");
+    const ctx = canvas.getContext("2d");
+
+    // Table dimensions
+    const tableWidth = canvas.width;
+    const tableHeight = canvas.height;
+
+    // Create balls
+    const balls = [];
+    const colors = [
+      "yellow", "blue", "red", "purple", "orange", "green", "maroon", "black",
+      "pink", "lightblue", "lightgreen", "brown", "cyan", "violet", "gold"
+    ];
+
+    for (let i = 0; i < 15; i++) {
+      balls.push({
+        x: Math.random() * (tableWidth - 40) + 20,
+        y: Math.random() * (tableHeight - 40) + 20,
+        radius: 12,
+        color: colors[i % colors.length],
+        dx: (Math.random() - 0.5) * 4,
+        dy: (Math.random() - 0.5) * 4,
+        number: i + 1
+      });
+    }
+
+    // Cue ball (white)
+    const cueBall = { x: 100, y: 200, radius: 12, color: "white", dx: 2, dy: 2 };
+
+    function drawBall(ball) {
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fillStyle = ball.color;
+      ctx.fill();
+      ctx.strokeStyle = "black";
+      ctx.stroke();
+      ctx.closePath();
+
+      // Draw numbers
+      ctx.fillStyle = "black";
+      ctx.font = "10px Arial";
+      ctx.fillText(ball.number || "", ball.x - 3, ball.y + 3);
+    }
+
+    function drawTable() {
+      ctx.clearRect(0, 0, tableWidth, tableHeight);
+      ctx.fillStyle = "green";
+      ctx.fillRect(0, 0, tableWidth, tableHeight);
+    }
+
+    function moveBall(ball) {
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+
+      if (ball.x + ball.radius > tableWidth || ball.x - ball.radius < 0) {
+        ball.dx *= -1;
+      }
+      if (ball.y + ball.radius > tableHeight || ball.y - ball.radius < 0) {
+        ball.dy *= -1;
+      }
+    }
+
+    function animate() {
+      drawTable();
+      drawBall(cueBall);
+      balls.forEach(ball => {
+        moveBall(ball);
+        drawBall(ball);
+      });
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // 🎯 Pointer guide
+    canvas.addEventListener("mousemove", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      drawTable();
+      drawBall(cueBall);
+      balls.forEach(ball => drawBall(ball));
+
+      ctx.beginPath();
+      ctx.moveTo(cueBall.x, cueBall.y);
+      ctx.lineTo(mouseX, mouseY);
+      ctx.strokeStyle = "yellow";
+      ctx.setLineDash([5, 5]);
+      ctx.stroke();
+      ctx.setLineDash([])
+<div class="wrap">
+  <canvas id="table" width="920" height="520"></canvas>
+
+  <div class="panel">
+    <h3>Two-Player Predictive Pool</h3>
+    <div class="muted">Click the white cue ball to aim. Move the mouse to show visible targets and predicted pockets.</div>
+
+    <div class="scoreboard">
+      <div>🎱 <b>Player 1:</b> <span id="p1Score">0</span></div>
+      <div>🎱 <b>Player 2:</b> <span id="p2Score">0</span></div>
+      <div style="margin-top:6px;">Turn: <span id="turnName" class="turn">Player 1</span></div>
+    </div>
+
+    <div class="controls">
+      <button id="reset" class="btn-primary">Reset Table</button>
+      <button id="reposition">Re-rack</button>
+    </div>
+
+    <div class="small">Hover target: <span id="hoverInfo">—</span></div>
+
+    <h3 style="margin-top:12px">Legend</h3>
+    <div class="legend">
+      <span style="background:#ffffffaa;color:#000">Cue ball</span>
+      <span style="background:#ffd54faa;color:#000">Target highlight</span>
+      <span style="background:#ffffff22;color:#fff">Aim line</span>
+      <span style="background:#00ff00aa;color:#000">Predicted pocket</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('table');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+const resetBtn = document.getElementById('reset');
+const repositionBtn = document.getElementById('reposition');
+const hoverInfo = document.getElementById('hoverInfo');
+const p1ScoreEl = document.getElementById('p1Score');
+const p2ScoreEl = document.getElementById('p2Score');
+const turnName = document.getElementById('turnName');
+
+const POCKET_R = 30;
+const BALL_R = 14;
+
+const POCKETS = [
+  {x:0, y:0}, {x:W/2, y:0}, {x:W, y:0},
+  {x:0, y:H}, {x:W/2, y:H}, {x:W, y:H}
+];
+
+const COLORS = {
+  0:'#ffffff',1:'#f1c40f',2:'#3498db',3:'#e74c3c',4:'#8e44ad',5:'#f39c12',
+  6:'#27ae60',7:'#800000',8:'#000000',9:'#f1c40f',10:'#3498db',11:'#e74c3c',
+  12:'#8e44ad',13:'#f39c12',14:'#27ae60',15:'#800000'
+};
+
+let balls = [];
+let cue;
+let aiming = false;
+let mouse = {x:0,y:0};
+let shotInProgress = false;
+
+let players = [
+  {name:"Player 1", score:0},
+  {name:"Player 2", score:0}
+];
+let currentPlayer = 0;
+function switchTurn(){
+  currentPlayer = 1 - currentPlayer;
+  turnName.textContent = players[currentPlayer].name;
+}
+
+function updateScores(){
+  p1ScoreEl.textContent = players[0].score;
+  p2ScoreEl.textContent = players[1].score;
+}
+
+/* Ball class */
+class Ball {
+  constructor(x,y,num){
+    this.x=x; this.y=y; this.num=num; this.r=BALL_R;
+    this.color = COLORS[num] || '#999';
+    this.vx=0; this.vy=0; this.inPocket=false;
+    this.isCue = (num===0);
+  }
+  draw(ctx){
+    if(this.inPocket) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#111';
+    ctx.stroke();
+    if(this.num !== 0){
+      ctx.fillStyle = 'white';
+      ctx.beginPath(); ctx.arc(this.x,this.y,this.r*0.45,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#000'; ctx.font = ${this.r}px Arial; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(this.num, this.x, this.y);
+    } else {
+      ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.arc(this.x,this.y,this.r*0.14,0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+  update(){
+    if(this.inPocket) return;
+    this.x += this.vx; this.y += this.vy;
+    this.vx *= 0.992; this.vy *= 0.992;
+    if(Math.abs(this.vx) < 0.02) this.vx = 0;
+    if(Math.abs(this.vy) < 0.02) this.vy = 0;
+    if(this.x - this.r < 0){ this.x = this.r; this.vx *= -0.92; }
+    if(this.x + this.r > W){ this.x = W - this.r; this.vx *= -0.92; }
+    if(this.y - this.r < 0){ this.y = this.r; this.vy *= -0.92; }
+    if(this.y + this.r > H){ this.y = H - this.r; this.vy *= -0.92; }
+    for(const p of POCKETS){
+      const d = Math.hypot(this.x - p.x, this.y - p.y);
+      if(d < POCKET_R - this.r*0.3){
+        this.inPocket = true;
+        this.vx = 0; this.vy = 0;
+        if(!this.isCue){
+          players[currentPlayer].score += 1;
+          updateScores();
+        } else {
+          // Cue ball scratch penalty
+          switchTurn();
+        }
+      }
+    }
+  }
+}
+
+/* Rack setup */
+function rackCenter(){
+  balls = [];
+  const centerX = W/2 - 100;
+  const centerY = H/2;
+  cue = new Ball(W - 140, centerY, 0);
+  balls.push(cue);
+  let n = 1;
+  for(let row=0; row<5; row++){
+    for(let col=0; col<=row; col++){
+      const x = centerX + row*(BALL_R*2 - 1);
+      const y = centerY + (col - row/2)*(BALL_R*2 + 1);
+      balls.push(new Ball(x,y,n));
+      n++;
+    }
+  }
+}
+
+/* collisions */
+function resolveCollisions(){
+  for(let i=0;i<balls.length;i++){
+    for(let j=i+1;j<balls.length;j++){
+      const A=balls[i],B=balls[j];
+      if(A.inPocket||B.inPocket)continue;
+      const dx=B.x-A.x,dy=B.y-A.y;
+      const dist=Math.hypot(dx,dy);
+      const min=A.r+B.r;
+      if(dist<min&&dist>0.0001){
+        const nx=dx/dist,ny=dy/dist;
+        const overlap=min-dist;
+        A.x-=nx*overlap/2;A.y-=ny*overlap/2;
+        B.x+=nx*overlap/2;B.y+=ny*overlap/2;
+        const dvx=A.vx-B.vx,dvy=A.vy-B.vy;
+        const impact=dvx*nx+dvy*ny;
+        if(impact>0){
+          A.vx-=impact*nx;A.vy-=impact*ny;
+          B.vx+=impact*nx;B.vy+=impact*ny;
+        }
+      }
+    }
+  }
+}
+
+/* Draw table and game visuals */
+function drawPockets(){
+  for(const p of POCKETS){
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,POCKET_R,0,Math.PI*2);
+    const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,POCKET_R);
+    g.addColorStop(0,'#000');g.addColorStop(1,'#333');
+    ctx.fillStyle=g;ctx.fill();
+  }
+}
+
+function allStopped(){
+  return balls.every(b=>b.inPocket||(Math.abs(b.vx)<0.01&&Math.abs(b.vy)<0.01));
+}
+
+function render(){
+  for(const b of balls)b.update();
+  resolveCollisions();
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0c6b36';ctx.fillRect(0,0,W,H);
+  drawPockets();
+
+  for(const b of balls)b.draw(ctx);
+
+  if(shotInProgress && allStopped()){
+    shotInProgress=false;
+    switchTurn();
+  }
+
+  requestAnimationFrame(render);
+}
+
+/* Shoot */
+function shootAlongMouse(){
+  const dx=mouse.x-cue.x,dy=mouse.y-cue.y;
+  const dist=Math.hypot(dx,dy);
+  if(dist<1)return;
+  const ux=dx/dist,uy=dy/dist;
+  const pull=Math.min(120,dist);
+  cue.vx=ux*(pull*0.36);
+  cue.vy=uy*(pull*0.36);
+  shotInProgress=true;
+}
+
+/* Events */
+canvas.addEventListener('mousemove',e=>{
+  const rect=canvas.getBoundingClientRect();
+  mouse.x=e.clientX-rect.left;mouse.y=e.clientY-rect.top;
+});
+canvas.addEventListener('mousedown',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  const d=Math.hypot(mx-cue.x,my-cue.y);
+  if(d<=cue.r+14&&!shotInProgress){aiming=true;}
+});
+canvas.addEventListener('mouseup',e=>{
+  if(aiming&&!shotInProgress)shootAlongMouse();
+  aiming=false;
+});
+
+function resetTable(){
+  players[0].score=0;players[1].score=0;updateScores();
+  currentPlayer=0;turnName.textContent=players[0].name;
+  rackCenter();
+}
+resetBtn.addEventListener('click',resetTable);
+repositionBtn.addEventListener('click',()=>rackCenter());
+
+rackCenter();
+updateScores();
+render();
+</script>
+</body>
+</html>

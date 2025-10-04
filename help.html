@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Help Desk</title>
+<style>
+body {font-family:Arial,sans-serif;background:#eef;padding:20px;}
+.container{max-width:500px;margin:auto;background:white;padding:20px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.2);}
+h2{text-align:center;}
+input,textarea,button{width:100%;padding:10px;margin:8px 0;border-radius:6px;border:1px solid #ccc;}
+button{background:#007bff;color:white;border:none;font-weight:bold;cursor:pointer;}
+button:hover{background:#0056b3;}
+.success{text-align:center;font-weight:bold;}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Help Desk</h2>
+  <p>Need help? Submit your issue below.</p>
+  <input type="text" id="name" placeholder="Your Name" required>
+  <input type="email" id="email" placeholder="Your Email" required>
+  <textarea id="issue" rows="4" placeholder="Describe your issue..."></textarea>
+  <button onclick="submitTicket()">Send Help Request</button>
+  <p id="message" class="success"></p>
+</div>
+
+<script>
+function submitTicket() {
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const issue = document.getElementById('issue').value.trim();
+  const msg = document.getElementById('message');
+
+  if (!name || !email || !issue) {
+    msg.textContent = "⚠️ Please fill in all fields.";
+    msg.style.color = "red";
+    return;
+  }
+
+  const ticket = {
+    id: Date.now(),
+    name,
+    email,
+    issue,
+    status: "Pending",
+    date: new Date().toLocaleString()
+  };
+
+  const tickets = JSON.parse(localStorage.getItem('helpTickets')) || [];
+  tickets.push(ticket);
+  localStorage.setItem('helpTickets', JSON.stringify(tickets));
+
+  msg.textContent = "✅ Help request sent successfully!";
+  msg.style.color = "green";
+
+  document.getElementById('name').value = '';
+  document.getElementById('email').value = '';
+  document.getElementById('issue').value = '';
+}
+</script>
+</body>
+</html>

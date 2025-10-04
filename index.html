@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Denis Website - Home</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f8ff;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    header {
+      background: #007bff;
+      color: white;
+      padding: 20px;
+    }
+    h1 {
+      margin: 0;
+      font-style: italic;
+    }
+    /* ✅ Navigation bar */
+    nav {
+      background: #0056b3;
+      padding: 10px;
+    }
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin: 0 15px;
+      font-weight: bold;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+    section {
+      padding: 20px;
+      margin: 20px auto;
+      width: 80%;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+    }
+    h2 {
+      color: #007bff;
+      margin-bottom: 10px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    ul li {
+      margin: 8px 0;
+    }
+    .social-links a {
+      margin: 0 10px;
+      text-decoration: none;
+      font-size: 18px;
+      color: #007bff;
+      font-weight: bold;
+    }
+    .social-links a:hover {
+      color: #0056b3;
+    }
+    footer {
+      background: #f0f0f0;
+      padding: 15px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1 id="welcomeTitle"></h1>
+    <p>Your trusted online services</p>
+  </header>
+
+  <!-- ✅ Navigation bar -->
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="login.html">Login</a>
+    <a href="signup.html">Signup</a>
+    <a href="help.html">Help</a>
+  </nav>
+
+  <section>
+    <h2>Our Services</h2>
+    <ul>
+      <li>📚 Online Tests & Exams</li>
+      <li>💻 Web Development</li>
+      <li>📊 Data Management</li>
+      <li>📱 IT Support & Training</li>
+    </ul>
+  </section><!-- Your existing homepage content -->
+
+<h2>Connect With Us</h2>
+<p>Click an icon below to reach us directly:</p>
+
+
+  <section>
+    <h2>Support Team</h2>
+    <p>Our support team is available 24/7 to help you with any questions.</p>
+  </section>
+
+  <section>
+    <h2>Help</h2>
+    <p>Visit our <a href="help.html">Help Page</a> for FAQs and guides.</p>
+  </section>
+
+  <section>
+    <h2>Contact Details</h2>
+    <p>Email:denispetermwendwa003@gmail .com</p>
+    <p>Phone: +254 700004163</p>
+  </section>
+
+  <section>
+    <h2>Connect With Us</h2>
+    <div class="social-links">
+      <a href="https://facebook.com/deni muia" target="_blank">Facebook</a>
+      <a href="https://wa.me/254700004163" target="_">WhatsApp</a>
+      <a href="https://t.me/@doggy50" target=" blank">Telegram</a>
+      <a href="https://tiktok.com/@muiajii" target="_blank">TikTok</a>
+    </div>
+  </section>
+
+  <footer>
+    <p>© 2025 Denis Website. All Rights Reserved.</p>
+  </footer>
+
+  <!-- ✅ JavaScript -->
+  <script>
+    // Show a dynamic welcome message
+    const welcome = document.getElementById("welcomeTitle");
+    const today = new Date();
+    let hour = today.getHours();
+    let greeting = "";
+
+    if (hour < 12) {
+      greeting = "Good Morning ☀️, Welcome to denis online services";
+    } else if (hour < 18) {
+      greeting = "Good Afternoon 🌞, Welcome to Denis Online services";
+    } else {
+ greeting = "Good Evening 🌙, Welcome to Denis Online services";
+    }
+
+    welcome.textContent = greeting;
+  </script>
+
+</body>
+</html>
