@@ -82,8 +82,8 @@
 const form = document.getElementById('loginForm');
 const msg = document.getElementById('msg');
 
-// Owner/Admin credentials
-const OWNER = { username: "denis@", password: "Admin@321" }; // ✅ password: Admin@321
+// ✅ Owner/Admin credentials
+const OWNER = { username: "denis@", password: "Admin@321" }; 
 
 function showMessage(text){
   msg.textContent = text;
@@ -96,19 +96,21 @@ form.addEventListener('submit', function(e) {
   const u = document.getElementById('username').value.trim();
   const p = document.getElementById('password').value;
 
-  // Owner login
+  // ✅ Owner login
   if(u === OWNER.username && p === OWNER.password) {
+    // store login state so owner stays logged in
     localStorage.setItem("isOwnerLoggedIn", "true");
     alert("Welcome Owner! Redirecting to Owner Dashboard...");
     window.location.href = "owner-dashboard.html";
     return;
   }
 
-  // Normal registered users
+  // ✅ Normal registered users
   const users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
   const found = users.find(user => user.username === u && user.password === p);
 
   if(found){
+    localStorage.setItem("isUserLoggedIn", "true");
     alert("Login successful! Redirecting to User Dashboard...");
     window.location.href = "user-dashboard.html";
   } else {
@@ -117,6 +119,6 @@ form.addEventListener('submit', function(e) {
 });
 </script>
 </body>
-
 </html>
+
 
