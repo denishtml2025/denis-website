@@ -68,50 +68,64 @@ body {
 </style>
 </head>
 <body>
-  <script>
-  // Redirect if owner not logged in
+
+<!-- ✅ Protect the page -->
+<script>
+  // Check if owner is logged in
   if (localStorage.getItem("isOwnerLoggedIn") !== "true") {
     alert("Please log in first.");
     window.location.href = "login.html";
   }
+
+  // Logout function
+  function logout() {
+    localStorage.removeItem("isOwnerLoggedIn");
+    alert("You have been logged out.");
+    window.location.href = "login.html";
+  }
 </script>
-  <div class="sidebar">
-    <h2>Owner</h2>
-    <a href="#">📊 Dashboard</a>
-<a href="admin-help.html">🛠 Help Desk</a>
-    <a href="admin.html">🧑‍💼 Go to Admin Dashboard</a>
-    <a href="pool.html">🎱 Pool Game</a>
-   <a href="aviator.html">🎱 Aviator Game</a>
-    <div class="logout">
-      <a href="login.html">Logout</a>
-    </div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <h2>Owner</h2>
+  <a href="#">📊 Dashboard</a>
+  <a href="admin-help.html">🛠 Help Desk</a>
+  <a href="admin.html">🧑‍💼 Go to Admin Dashboard</a>
+  <a href="pool.html">🎱 Pool Game</a>
+  <a href="aviator.html">✈️ Aviator Game</a>
+  
+  <div class="logout">
+    <a href="#" onclick="logout()">Logout</a>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="main">
+  <div class="topbar">
+    <h1>Welcome, Denis (Owner)</h1>
   </div>
 
-  <div class="main">
-    <div class="topbar">
-      <h1>Welcome, Denis (Owner)</h1>
+  <div class="cards">
+    <div class="card">
+      <h3>Total Users</h3>
+      <p>200</p>
     </div>
-
-    <div class="cards">
-      <div class="card">
-        <h3>Total Users</h3>
-        <p>200</p>
-      </div>
-      <div class="card">
-        <h3>Active Games</h3>
-        <p>25</p>
-      </div>
-      <div class="card">
-        <h3>Total Profit</h3>
-        <p>KES 5,600</p>
-      </div>
-      <div class="card">
-        <h3>Support Requests</h3>
-        <p>12</p>
-      </div>
+    <div class="card">
+      <h3>Active Games</h3>
+      <p>25</p>
+    </div>
+    <div class="card">
+      <h3>Total Profit</h3>
+      <p>KES 5,600</p>
+    </div>
+    <div class="card">
+      <h3>Support Requests</h3>
+      <p>12</p>
     </div>
   </div>
+</div>
+
 </body>
-
 </html>
+
 
