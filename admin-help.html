@@ -28,8 +28,8 @@ button{padding:6px 10px;border:none;border-radius:5px;cursor:pointer;}
 </table>
 
 <script>
-if(localStorage.getItem('adminLoggedIn') !== 'true'){
-  alert('Access denied. Please log in first.');
+if(localStorage.getItem('isOwnerloggedIn') !== 'true'){
+  alert("Please log in first.");
   window.location.href = 'admin-login.html';
 }
 
@@ -78,4 +78,5 @@ function logout(){
 loadTickets();
 </script>
 </body>
+
 </html>
