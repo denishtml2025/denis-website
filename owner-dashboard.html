@@ -68,6 +68,13 @@ body {
 </style>
 </head>
 <body>
+  <script>
+  // Redirect if owner not logged in
+  if (localStorage.getItem("isOwnerLoggedIn") !== "true") {
+    alert("Please log in first.");
+    window.location.href = "login.html";
+  }
+</script>
   <div class="sidebar">
     <h2>Owner</h2>
     <a href="#">📊 Dashboard</a>
@@ -105,4 +112,5 @@ body {
     </div>
   </div>
 </body>
+
 </html>
