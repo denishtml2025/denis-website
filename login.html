@@ -98,6 +98,7 @@ form.addEventListener('submit', function(e) {
 
   // Owner login
   if(u === OWNER.username && p === OWNER.password) {
+    localStorage.setItem("isOwnerLoggedIn", "true");
     alert("Welcome Owner! Redirecting to Owner Dashboard...");
     window.location.href = "owner-dashboard.html";
     return;
@@ -118,3 +119,4 @@ form.addEventListener('submit', function(e) {
 </body>
 
 </html>
+
