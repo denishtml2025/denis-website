@@ -110,8 +110,8 @@ form.addEventListener('submit', function(e) {
   const found = users.find(user => user.username === u && user.password === p);
 
   if(found){
-    localStorage.setItem("isUserLoggedIn", "true");
     alert("Login successful! Redirecting to User Dashboard...");
+     localStorage.setItem("isUserLoggedIn", "true");
     window.location.href = "user-dashboard.html";
   } else {
     showMessage("Invalid username or password.");
@@ -120,5 +120,6 @@ form.addEventListener('submit', function(e) {
 </script>
 </body>
 </html>
+
 
 
