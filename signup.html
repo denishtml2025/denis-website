@@ -128,9 +128,19 @@ form.addEventListener('submit', function(e) {
   alert("Account created successfully!");
   window.location.href = "login.html";
 });
+  
+function forgotPassword() {
+  const email = prompt("Enter your registered email to reset password:");
+  if (email) {
+    alert("✅ A password reset link has been sent to " + email);
+    // (Later you can replace this with real email sending logic)
+  }
+
+
 </script>
 </body>
 </html>
+
 
 
 
