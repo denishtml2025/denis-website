@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aviator Real Play</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #0b132b;
+  color: #fff;
+  text-align: center;
+  margin: 0;
+}
+h2 {margin-top: 20px;}
+#gameArea {
+  width: 300px;
+  height: 300px;
+  background: #1c2541;
+  border-radius: 10px;
+  margin: 40px auto;
+  position: relative;
+  overflow: hidden;
+}
+#plane {
+  position: absolute;
+  bottom: 20px;
+  left: 130px;
+  font-size: 30px;
+}
+button {
+  background: #e63946;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  margin: 10px;
+  cursor: pointer;
+}
+input {
+  padding: 8px;
+  width: 100px;
+  border-radius: 5px;
+  border: none;
+  text-align: center;
+}
+#balance {
+  margin-top: 10px;
+  font-size: 18px;
+}
+#multiplier {
+  font-size: 25px;
+  margin-top: 15px;
+}
+</style>
+</head>
+<body>
+
+<h2>Aviator Real Play</h2>
+<div id="balance">Balance: Ksh <span id="bal">0</span></div>
+<div id="gameArea">
+  <div id="plane">✈️</div>
+</div>
+
+<div>
+  <input type="number" id="betAmount" placeholder="Enter Bet">
+  <button onclick="startGame()">PLAY</button>
+</div>
+
+<div id="multiplier">Multiplier: 1.00x</div>
+
+<script>
+let flying = false;
+
+// Check login
+let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+if(!currentUser){
+  alert("Please log in first.");
+  window.location.href = "login.html";
+}
+
+// Load balance
+let balance = parseFloat(localStorage.getItem('balance_' + currentUser.email)) || 1000;
+document.getElementById('bal').textContent = balance.toFixed(2);
+
+function startGame(){
+  if (flying) return;
+  let bet = parseFloat(document.getElementById('betAmount').value);
+  if (isNaN(bet) || bet <= 0) {
+    alert("Enter a valid bet amount.");
+    return;
+  }
+  if (bet > balance) {
+    alert("Not enough balance.");
+    return;
+  }
+
+  flying = true;
+  balance -= bet;
+  updateBalance();
+
+  let multiplier = 1.00;
+  let plane = document.getElementById('plane');
+  let mDisplay = document.getElementById('multiplier');
+  let pos = 20;
+  let crashPoint = Math.random() * 10 + 1; 
+
+  let game = setInterval(()=>{
+    multiplier += 0.10;
+    pos += 5;
+    mDisplay.textContent = Multiplier: ${multiplier.toFixed(2)}x;
+    plane.style.bottom = pos + "px";
+    if(multiplier >= crashPoint){
+      clearInterval(game);
+      mDisplay.textContent = Crashed at ${multiplier.toFixed(2)}x 💥;
+      flying = false;
+      setTimeout(()=>{plane.style.bottom='20px';}, 800);
+    }
+  }, 200);
+
+  setTimeout(()=>{
+    let winChance = Math.random();
+    if (winChance > 0.5) {
+      let winnings = bet * (Math.random() * 5 + 1);
+      balance += winnings;
+      alert("You won Ksh " + winnings.toFixed(2));
+      updateBalance();
+    } else {
+      alert("You lost this round!");
+    }
+  }, 3000);
+}
+
+function updateBalance(){
+  document.getElementById('bal').textContent = balance.toFixed(2);
+  localStorage.setItem('balance_' + currentUser.email, balance);
+}
+</script>
+
+</body>
+</html>
