@@ -32,9 +32,10 @@
   h1{text-align:center;color:var(--accent);margin-bottom:10px;}
   form{display:flex;flex-direction:column;gap:12px;}
   label{font-size:13px;color:#374151;}
-  input[type="text"],input[type="password"]{
+  input[type="text"],input[type="password"],input[type="email"],input[type="number"]{
     padding:10px;border-radius:8px;border:1px solid #d1d5db;font-size:14px;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.03);
+    width:100%;
   }
   button{
     background:var(--accent);
@@ -59,11 +60,13 @@
 </style>
 </head>
 <body>
-<div class="container">
+
+<!-- Login Container -->
+<div class="container" id="loginContainer">
   <h1>Login</h1>
   <form id="loginForm">
-    <label for="username">Username</label>
-    <input type="text" id="username" required>
+    <label for="userInput">Username or Email</label>
+    <input type="text" id="userInput" placeholder="Enter username or email" required>
 
     <label for="password">Password</label>
     <input type="password" id="password" required>
@@ -71,6 +74,10 @@
     <div class="msg" id="msg"></div>
 
     <button type="submit">Login</button>
+
+    <p style="text-align:center; margin-top:10px;">
+      <a href="#" onclick="showForgotPassword()">Forgot your password?</a>
+    </p>
   </form>
 
   <footer>
@@ -78,12 +85,34 @@
   </footer>
 </div>
 
+<!-- Forgot Password Container -->
+<div class="container" id="forgotContainer" style="display:none;">
+  <h1>Reset Password</h1>
+
+  <label for="resetEmail">Email</label>
+  <input type="email" id="resetEmail" placeholder="Enter your registered email">
+
+  <button onclick="sendResetCode()">Send Code</button>
+
+  <div id="codeSection" style="display:none; margin-top:10px;">
+    <label>Enter Code</label>
+    <input type="number" id="resetCode" placeholder="6-digit code">
+    <label>New Password</label>
+    <input type="password" id="newPassword" placeholder="New password">
+    <button onclick="verifyAndReset()">Reset Password</button>
+  </div>
+
+  <p style="text-align:center; margin-top:10px;">
+    <a href="#" onclick="backToLogin()">← Back to Login</a>
+  </p>
+</div>
+
 <script>
 const form = document.getElementById('loginForm');
 const msg = document.getElementById('msg');
 
-// ✅ Owner/Admin credentials
-const OWNER = { username: "denis@", password: "Admin@321" }; 
+// Owner/Admin credentials
+const OWNER = { username: "denis@", email: "denis@gmail.com", password: "Admin@321" };
 
 function showMessage(text){
   msg.textContent = text;
@@ -93,33 +122,77 @@ function showMessage(text){
 
 form.addEventListener('submit', function(e) {
   e.preventDefault();
-  const u = document.getElementById('username').value.trim();
-  const p = document.getElementById('password').value;
+  const input = document.getElementById('userInput').value.trim();
+  const pass = document.getElementById('password').value;
 
-  // ✅ Owner login
-  if(u === OWNER.username && p === OWNER.password) {
-    // store login state so owner stays logged in
-    localStorage.setItem("isOwnerLoggedIn", "true");
+  // Owner login
+  if((input === OWNER.username || input === OWNER.email) && pass === OWNER.password) {
     alert("Welcome Owner! Redirecting to Owner Dashboard...");
     window.location.href = "owner-dashboard.html";
     return;
   }
 
-  // ✅ Normal registered users
+  // Normal users
   const users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-  const found = users.find(user => user.username === u && user.password === p);
+  const found = users.find(user =>
+    (user.username === input || user.email === input) && user.password === pass
+  );
 
   if(found){
     alert("Login successful! Redirecting to User Dashboard...");
-     localStorage.setItem("isUserLoggedIn", "true");
     window.location.href = "user-dashboard.html";
   } else {
-    showMessage("Invalid username or password.");
+    showMessage("Invalid username/email or password.");
   }
 });
+
+// ---- Forgot Password System ----
+let generatedCode = null;
+
+function showForgotPassword(){
+  document.getElementById('loginContainer').style.display='none';
+  document.getElementById('forgotContainer').style.display='block';
+}
+
+function sendResetCode(){
+  const email = document.getElementById('resetEmail').value.trim();
+  const users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+  const user = users.find(u => u.email === email);
+
+  if(!user){
+    alert("❌ No account found with that email.");
+    return;
+  }
+
+  generatedCode = Math.floor(100000 + Math.random() * 900000);
+  alert("✅ A reset code has been sent to your email (demo): " + generatedCode);
+  document.getElementById('codeSection').style.display = 'block';
+}
+
+function verifyAndReset(){
+  const enteredCode = document.getElementById('resetCode').value.trim();
+  const newPass = document.getElementById('newPassword').value;
+  const email = document.getElementById('resetEmail').value.trim();
+
+  if(enteredCode == generatedCode){
+    let users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+    const index = users.findIndex(u => u.email === email);
+    if(index !== -1){
+      users[index].password = newPass;
+      localStorage.setItem('registeredUsers', JSON.stringify(users));
+      alert("✅ Password reset successful!");
+      backToLogin();
+    }
+  } else {
+    alert("❌ Invalid code. Try again.");
+  }
+}
+
+function backToLogin(){
+  document.getElementById('loginContainer').style.display='block';
+  document.getElementById('forgotContainer').style.display='none';
+}
 </script>
+
 </body>
 </html>
-
-
-
