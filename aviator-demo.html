@@ -1,87 +1,398 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aviator Demo</title>
-<style>
-body {
-  font-family: Arial, sans-serif;
-  background: #101820;
-  color: white;
-  text-align: center;
-  margin: 0;
-  padding: 0;
-}
-h2 {
-  margin-top: 20px;
-}
-#gameArea {
-  margin: 40px auto;
-  width: 300px;
-  height: 300px;
-  background: #222;
-  border-radius: 10px;
-  position: relative;
-  overflow: hidden;
-}
-#plane {
-  position: absolute;
-  bottom: 20px;
-  left: 130px;
-  font-size: 30px;
-}
-button {
-  background: #e63946;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 10px 20px;
-  margin-top: 20px;
-  cursor: pointer;
-}
-#multiplier {
-  font-size: 25px;
-  margin-top: 15px;
-}
-</style>
+  <meta charset="utf-8" />
+  <title>Aviator demo — autopilot + scheduled crash editor</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 12px; }
+    canvas { background:#87CEEB; display:block; margin-bottom:10px; border:1px solid #aaa }
+    .controls { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+    .panel { border:1px solid #ddd; padding:8px; border-radius:6px; background:#fff }
+    table { width:100%; border-collapse:collapse; margin-top:8px }
+    th,td { border:1px solid #eee; padding:6px; text-align:left; font-size:13px }
+    input[type=text], select { padding:4px; font-size:13px }
+    button { padding:6px 8px; cursor:pointer }
+    .small { font-size:12px; color:#666 }
+  </style>
 </head>
 <body>
+  <h1>Aviator — Autopilot + Scheduled Crash Editor</h1>
 
-<h2>Aviator Demo (Manual Play)</h2>
-<div id="gameArea">
-  <div id="plane">✈️</div>
-</div>
+  <!-- Canvas where the simple flight runs -->
+  <canvas id="flight" width="800" height="300"></canvas>
 
-<div id="multiplier">Multiplier: 1.00x</div>
-<button onclick="startGame()">PLAY</button>
+  <div class="controls">
+    <div class="panel">
+      <div><strong>Autopilot</strong></div>
+      <div class="small">Status: <span id="status">starting...</span></div>
+      <button id="btnToggle">Pause Autopilot</button>
+      <button id="btnCrashNow">Force Crash Now</button>
+    </div>
 
-<script>
-let flying = false;
+    <div class="panel" style="min-width:380px">
+      <div><strong>Schedule editor</strong></div>
+      <div class="small">Add a scheduled crash for a day (or "Every day"). Time format: HH:MM (24h)</div>
 
-function startGame(){
-  if (flying) return;
-  flying = true;
-  let multiplier = 1.00;
-  let plane = document.getElementById('plane');
-  let mDisplay = document.getElementById('multiplier');
-  let pos = 20;
-  let crashPoint = Math.random() * 10 + 1; // random 1x - 10x
+      <div style="margin-top:8px; display:flex; gap:6px; align-items:center;">
+        <select id="daySelect">
+          <option value="every">Every day</option>
+          <option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option>
+          <option value="3">Wednesday</option><option value="4">Thursday</option>
+          <option value="5">Friday</option><option value="6">Saturday</option>
+        </select>
+        <input id="timeInput" type="text" placeholder="HH:MM"/>
+        <input id="wpIndex" type="text" placeholder="waypoint index (0..)" style="width:120px"/>
+        <button id="btnAdd">Add</button>
+      </div>
 
-  let game = setInterval(()=>{
-    multiplier += 0.10;
-    pos += 5;
-    mDisplay.textContent = Multiplier: ${multiplier.toFixed(2)}x;
-    plane.style.bottom = pos + "px";
-    if(multiplier >= crashPoint){
-      clearInterval(game);
-      mDisplay.textContent = Crashed at ${multiplier.toFixed(2)}x 💥;
-      flying = false;
-      setTimeout(()=>{plane.style.bottom='20px';}, 800);
+      <div style="margin-top:8px;">
+        <button id="btnExport">Export JSON</button>
+        <button id="btnImport">Import JSON</button>
+        <input id="importArea" type="text" placeholder="Paste JSON then click Import" style="width:100%" />
+      </div>
+
+      <table id="scheduleTable">
+        <thead><tr><th>Day</th><th>Time</th><th>Waypoint</th><th>Action</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+  /*************************
+   * Simple aviator autopilot + scheduled crash example
+   *
+   * Data model for schedule:
+   * schedule = [
+   *   { id: "uuid", day: "every" | 0..6, time: "HH:MM", waypoint: 1 }
+   * ]
+   *
+   * day: "every" applies to all days; otherwise 0=Sunday..6=Saturday
+   *
+   * Behavior:
+   * - autopilot runs on RAF, plane moves along waypoints
+   * - a scheduler check runs every second and triggers a crash when now matches a schedule entry
+   * - tolerance window: if now is within +/-30 seconds of scheduled minute it will trigger (so minor clock drift won't block)
+   ************************/
+
+  // --- Utilities ---
+  function uuid4(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); }
+
+  function pad(n){ return n<10?'0'+n:''+n }
+
+  // --- Waypoints (example) ---
+  // For your real demo replace waypoints with actual 3D coordinates or indices.
+  const waypoints = [
+    {x:50, y:150},
+    {x:200, y:60},
+    {x:400, y:120},
+    {x:600, y:40},
+    {x:760, y:160},
+  ];
+
+  // --- State ---
+  const canvas = document.getElementById('flight');
+  const ctx = canvas.getContext('2d');
+  let running = true;
+  let plane = { x: waypoints[0].x, y: waypoints[0].y, speed: 80, // pixels per second
+                targetIndex: 1, crashed:false, crashProgress:0 };
+  let lastTs = performance.now();
+
+  // schedule loaded from localStorage
+  const STORAGE_KEY = 'aviator_schedules_v1';
+  let schedule = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+  // tolerance for matching scheduled time (seconds)
+  const SCHEDULE_TOLERANCE = 30;
+
+  // --- Drawing helpers ---
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // draw path
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#2E8B57';
+    ctx.beginPath();
+    ctx.moveTo(waypoints[0].x, waypoints[0].y);
+    for(let i=1;i<waypoints.length;i++) ctx.lineTo(waypoints[i].x, waypoints[i].y);
+    ctx.stroke();
+
+    // draw waypoints
+    for(let i=0;i<waypoints.length;i++){
+      ctx.beginPath();
+      ctx.fillStyle = '#fff';
+      ctx.arc(waypoints[i].x, waypoints[i].y, 6, 0, Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle='#333';
+      ctx.stroke();
+      ctx.fillStyle='#000';
+      ctx.fillText(i, waypoints[i].x+8, waypoints[i].y+4);
     }
-  }, 200);
-}
-</script>
 
+    // draw plane
+    ctx.save();
+    ctx.translate(plane.x, plane.y);
+    // rotate toward next waypoint
+    let tgt = waypoints[plane.targetIndex];
+    let ang = Math.atan2(tgt.y - plane.y, tgt.x - plane.x);
+    ctx.rotate(ang);
+    // if crashed, fall nose-down
+    if(plane.crashed){
+      ctx.rotate(Math.PI/2 * plane.crashProgress); // rotate gradually to crash pose
+    }
+    // simple triangle plane
+    ctx.beginPath();
+    ctx.moveTo(12,0);
+    ctx.lineTo(-12,-8);
+    ctx.lineTo(-12,8);
+    ctx.closePath();
+    ctx.fillStyle = plane.crashed ? '#b22222' : '#222';
+    ctx.fill();
+    ctx.restore();
+
+    // status text
+    ctx.fillStyle='#000';
+    ctx.fillText('Autopilot: ' + (running ? 'ON' : 'PAUSED') , 8, 14);
+    ctx.fillText('Next waypoint: ' + plane.targetIndex, 8, 30);
+  }
+
+  // --- Movement ---
+  function updateMovement(dt) {
+    if(plane.crashed) {
+      // crash "animation"
+      plane.crashProgress = Math.min(1, plane.crashProgress + dt*0.4);
+      // after crashProgress complete, keep plane on ground (stop movement)
+      return;
+    }
+
+    let tgt = waypoints[plane.targetIndex];
+    let dx = tgt.x - plane.x, dy = tgt.y - plane.y;
+    let dist = Math.hypot(dx,dy);
+    if(dist < 4) {
+      // reached waypoint -> advance target (loop)
+      plane.targetIndex = (plane.targetIndex + 1) % waypoints.length;
+    } else {
+      let vx = (dx / dist) * plane.speed;
+      let vy = (dy / dist) * plane.speed;
+      plane.x += vx * dt;
+      plane.y += vy * dt;
+    }
+  }
+
+  // --- Autopilot loop ---
+  function loop(ts) {
+    const dt = (ts - lastTs) / 1000;
+    lastTs = ts;
+    if(running) updateMovement(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // --- Scheduler: check every second for matches ---
+  setInterval(checkForScheduledCrash, 1000);
+
+  function checkForScheduledCrash(){
+    if(plane.crashed) return; // once crashed ignore until reset
+    const now = new Date();
+    const hh = now.getHours();
+    const mm = now.getMinutes();
+    const sec = now.getSeconds();
+    const today = now.getDay(); // 0..6
+
+    // convert to seconds-from-midnight for tolerance comparison
+    const nowSeconds = hh*3600 + mm*60 + sec;
+
+    for(const entry of schedule){
+      // check day match
+      if(entry.day !== 'every' && Number(entry.day) !== today) continue;
+
+      // parse entry.time "HH:MM"
+      const [eh, em] = (entry.time || '').split(':').map(s=>parseInt(s,10));
+      if(Number.isNaN(eh) || Number.isNaN(em)) continue;
+      const entrySeconds = eh*3600 + em*60;
+
+      if(Math.abs(nowSeconds - entrySeconds) <= SCHEDULE_TOLERANCE){
+        console.log('Scheduled crash triggered', entry);
+        triggerCrashAtSchedule(entry);
+        // if you want one-time schedules then remove here.
+        // For now keep them (so it will crash each time it matches).
+        return;
+      }
+    }
+  }
+
+  // --- Trigger crash ---
+  function triggerCrashAtSchedule(entry){
+    // Option A: crash at a specific waypoint index if provided
+    if(typeof entry.waypoint !== 'undefined' && entry.waypoint !== null){
+      const idx = Math.max(0, Math.min(waypoints.length-1, Number(entry.waypoint) || 0));
+      // snap plane to that waypoint then crash
+      plane.x = waypoints[idx].x;
+      plane.y = waypoints[idx].y;
+      plane.targetIndex = (idx + 1) % waypoints.length;
+      plane.crashed = true;
+      plane.crashProgress = 0;
+      setStatus('CRASHED at waypoint ' + idx);
+    } else {
+      // Option B: crash at the plane's current position
+      plane.crashed = true;
+      plane.crashProgress = 0;
+      setStatus('CRASHED at current position');
+    }
+  }
+
+  // --- Controls & editor UI ---
+  const statusEl = document.getElementById('status');
+  function setStatus(s){ statusEl.textContent = s; }
+
+  document.getElementById('btnToggle').addEventListener('click', ()=>{
+    running = !running;
+    document.getElementById('btnToggle').textContent = running ? 'Pause Autopilot' : 'Resume Autopilot';
+  });
+
+  document.getElementById('btnCrashNow').addEventListener('click', ()=>{
+    triggerCrashAtSchedule({ waypoint: plane.targetIndex });
+  });
+
+  const daySelect = document.getElementById('daySelect');
+  const timeInput = document.getElementById('timeInput');
+  const wpIndexInput = document.getElementById('wpIndex');
+  const scheduleTableBody = document.querySelector('#scheduleTable tbody');
+
+  function refreshTable(){
+    scheduleTableBody.innerHTML = '';
+    schedule.forEach(e => {
+      const tr = document.createElement('tr');
+      const dayText = (e.day === 'every') ? 'Every day' : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][Number(e.day)];
+      tr.innerHTML = `<td>${dayText}</td><td>${e.time}</td><td>${e.waypoint}</td>
+        <td>
+          <button data-id="${e.id}" class="del">Delete</button>
+        </td>`;
+      scheduleTableBody.appendChild(tr);
+    });
+  }
+
+  scheduleTableBody.addEventListener('click', (ev)=>{
+    if(ev.target.classList.contains('del')){
+      const id = ev.target.getAttribute('data-id');
+      schedule = schedule.filter(x=>x.id !== id);
+      saveSchedule();
+      refreshTable();
+    }
+  });
+
+  document.getElementById('btnAdd').addEventListener('click', ()=>{
+    const day = daySelect.value;
+    const time = (timeInput.value || '').trim();
+    const wp = wpIndexInput.value.trim() === '' ? null : Number(wpIndexInput.value.trim());
+    // basic validation: HH:MM
+    if(!/^\d{1,2}:\d{2}$/.test(time)){
+      alert('Time must be HH:MM (24-hour). Example: 14:30');
+      return;
+    }
+    // normalize time to HH:MM
+    const parts = time.split(':');
+    const hh = Math.max(0, Math.min(23, Number(parts[0])));
+    const mm = Math.max(0, Math.min(59, Number(parts[1])));
+    const normalized = pad(hh) + ':' + pad(mm);
+
+    const entry = { id: uuid4(), day: day, time: normalized, waypoint: wp };
+    schedule.push(entry);
+    saveSchedule();
+    refreshTable();
+    timeInput.value = ''; wpIndexInput.value = '';
+  });
+
+  document.getElementById('btnExport').addEventListener('click', ()=>{
+    const json = JSON.stringify(schedule, null, 2);
+    // create a quick download
+    const blob = new Blob([json], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'aviator-schedule.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('btnImport').addEventListener('click', ()=>{
+    const txt = document.getElementById('importArea').value.trim();
+    if(!txt) { alert('Paste schedule JSON into the input box first.'); return; }
+    try {
+      const parsed = JSON.parse(txt);
+      if(!Array.isArray(parsed)) throw new Error('expected array');
+      // basic validation for entries
+      parsed.forEach(p => {
+        if(!p.id) p.id = uuid4();
+        if(!p.time || !/^\d{1,2}:\d{2}$/.test(p.time)) throw new Error('invalid time on some entry');
+        if(typeof p.day === 'undefined') p.day = 'every';
+      });
+      schedule = parsed;
+      saveSchedule();
+      refreshTable();
+      alert('Imported schedule OK');
+    } catch(err){
+      alert('Invalid JSON: ' + err.message);
+    }
+  });
+
+  function saveSchedule(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(schedule));
+  }
+
+  // On page load: ensure schedule is valid and render table
+  (function init(){
+    // normalize entries
+    schedule = schedule.map(e => {
+      if(!e.id) e.id = uuid4();
+      if(!e.day) e.day = 'every';
+      if(e.time && /^\d{1,2}:\d{2}$/.test(e.time)){
+        const parts = e.time.split(':');
+        e.time = pad(Math.max(0, Math.min(23, Number(parts[0])))) + ':' + pad(Math.max(0, Math.min(59, Number(parts[1]))));
+      }
+      return e;
+    });
+    refreshTable();
+    setStatus('Autopilot: running');
+  })();
+
+  // optional: function to reset crash (for testing)
+  window.resetPlane = function(){
+    plane.crashed = false;
+    plane.crashProgress = 0;
+    plane.x = waypoints[0].x;
+    plane.y = waypoints[0].y;
+    plane.targetIndex = 1;
+    setStatus('Autopilot: running');
+  }
+
+  // helper: display next scheduled event in console
+  function nextScheduled(){
+    if(schedule.length===0) return null;
+    // naive next event search within next 7 days (for demo)
+    const now = new Date();
+    let best=null, bestDiff=Infinity;
+    for(const e of schedule){
+      for(let dOffset=0; dOffset<7; dOffset++){
+        const dayCandidate = new Date(now);
+        dayCandidate.setDate(now.getDate() + dOffset);
+        const dayIdx = dayCandidate.getDay();
+        if(e.day !== 'every' && Number(e.day) !== dayIdx) continue;
+        const [hh,mm] = e.time.split(':').map(x=>Number(x));
+        dayCandidate.setHours(hh, mm, 0, 0);
+        const diff = dayCandidate - now;
+        if(diff >= 0 && diff < bestDiff){ bestDiff = diff; best = {entry:e, when:dayCandidate}; }
+      }
+    }
+    return best;
+  }
+
+  // Optional: show upcoming schedule in console each minute
+  setInterval(()=> {
+    const nxt = nextScheduled();
+    if(nxt) console.log('Next scheduled crash at', nxt.when.toString(), nxt.entry);
+  }, 60000);
+
+  </script>
 </body>
 </html>
