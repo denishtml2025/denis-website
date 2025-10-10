@@ -112,7 +112,11 @@ const form = document.getElementById('loginForm');
 const msg = document.getElementById('msg');
 
 // Owner/Admin credentials
-const OWNER = { username: "denis@", email: "denis@gmail.com", password: "Admin@321" };
+const OWNER = { 
+  username: "denis@", 
+  email: "denis@gmail.com", 
+  password: "Admin@321" 
+};
 
 function showMessage(text){
   msg.textContent = text;
@@ -127,8 +131,8 @@ form.addEventListener('submit', function(e) {
 
   // Owner login
   if((input === OWNER.username || input === OWNER.email) && pass === OWNER.password) {
-    alert("Welcome Owner! Redirecting to Owner Dashboard...");
-    window.location.href = "owner-dashboard.html";
+    sessionStorage.setItem('ownerLoggedIn','true'); // mark owner logged in
+    window.location.href = "owner-dashboard.html"; // link to your owner dashboard
     return;
   }
 
@@ -139,8 +143,8 @@ form.addEventListener('submit', function(e) {
   );
 
   if(found){
-    alert("Login successful! Redirecting to User Dashboard...");
-    window.location.href = "user-dashboard.html";
+    sessionStorage.setItem('userLoggedIn','true'); // mark user logged in
+    window.location.href = "user-dashboard.html"; // your user dashboard
   } else {
     showMessage("Invalid username/email or password.");
   }
