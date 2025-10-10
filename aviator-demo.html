@@ -1,398 +1,396 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Aviator demo — autopilot + scheduled crash editor</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 12px; }
-    canvas { background:#87CEEB; display:block; margin-bottom:10px; border:1px solid #aaa }
-    .controls { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
-    .panel { border:1px solid #ddd; padding:8px; border-radius:6px; background:#fff }
-    table { width:100%; border-collapse:collapse; margin-top:8px }
-    th,td { border:1px solid #eee; padding:6px; text-align:left; font-size:13px }
-    input[type=text], select { padding:4px; font-size:13px }
-    button { padding:6px 8px; cursor:pointer }
-    .small { font-size:12px; color:#666 }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aviator</title>
+<style>
+body {
+  background:#111;
+  color:#fff;
+  font-family:Arial,sans-serif;
+  text-align:center;
+  margin:0;
+  padding:0;
+}
+.wrapper {
+  width:90%;
+  max-width:820px;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+canvas {
+  display:block;
+  margin:10px auto;
+  border:3px solid #fff;
+  border-radius:10px;
+  width:90%;
+  height:250px;
+  background:#000;
+}
+.container {
+  width:100%;
+  margin:10px auto;
+  padding:10px;
+  background:#1a1a1a;
+  border-radius:16px;
+  border:2px solid #333;
+  box-shadow:0 0 15px rgba(255,255,255,0.08);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  max-height:300px;
+  overflow:hidden;
+}
+.row {
+  display:flex;
+  justify-content:center;
+  flex-wrap:nowrap;
+  gap:10px;
+  width:100%;
+}
+.bet-display {
+  width:60px;
+  text-align:center;
+  background:#000;
+  border-radius:10px;
+  padding:4px 0;
+  font-size:14px;
+  font-weight:bold;
+}
+
+/* Buttons */
+button {
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+  transition:all 0.2s ease;
+}
+.right-btn {
+  height:60px;
+  border-radius:16px;
+  font-size:24px;
+  font-weight:bold;
+  color:#fff;
+  background:linear-gradient(90deg,#00c853,#00e676);
+  border:2px solid #00ff88;
+  box-shadow:0 5px 15px rgba(0,200,83,0.4);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.right-btn span {pointer-events:none;}
+.right-btn:hover {
+  background:linear-gradient(90deg,#00e676,#00ff88);
+  border-color:#00ff88;
+  box-shadow:0 8px 25px rgba(0,230,118,0.6);
+  transform:scale(1.05);
+}
+.action-btn, .preset-btn {
+  background:linear-gradient(90deg,#4f46e5,#6366f1);
+  color:#fff;
+  padding:10px 16px;
+  border-radius:16px;
+  font-size:16px;
+  flex:1;
+  min-width:100px;
+  box-shadow:0 4px 10px rgba(100,100,255,0.3);
+}
+.action-btn:hover, .preset-btn:hover {
+  background:linear-gradient(90deg,#6366f1,#4f46e5);
+  box-shadow:0 6px 15px rgba(100,100,255,0.5);
+  transform:scale(1.05);
+}
+.adjust-btn {
+  background:linear-gradient(90deg,#ff5722,#ff7043);
+  color:#fff;
+  font-size:16px;
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 4px 8px rgba(255,87,34,0.4);
+}
+.adjust-btn:hover {
+  background:linear-gradient(90deg,#ff7043,#ff5722);
+  box-shadow:0 6px 12px rgba(255,87,34,0.6);
+  transform:scale(1.1);
+}
+button:active { transform:scale(0.97); }
+@media(max-width:600px){
+  .action-btn,.preset-btn{ font-size:14px; padding:8px; min-width:100%; }
+  .adjust-btn{ width:30px;height:30px;font-size:14px; }
+  .right-btn{ height:40px;font-size:18px; }
+}
+.balance-row { justify-content:flex-end; display:flex; max-width:820px; margin:10px auto; }
+.balance-row div { background:rgba(255,255,255,0.08); padding:10px 20px; border-radius:8px; font-weight:bold; }
+.status { margin-top:10px; font-size:16px; color:#ffeb3b; }
+.round-history { max-width:820px; margin:10px auto; font-size:14px; color:#aaa; display:flex; flex-wrap:wrap; gap:5px; justify-content:center; }
+.round { background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:4px; }
+.inner-control { display:flex; gap:10px; align-items:center; justify-content:flex-start; }
+.left-controls { display:flex; align-items:center; gap:10px; }
+</style>
 </head>
 <body>
-  <h1>Aviator — Autopilot + Scheduled Crash Editor</h1>
 
-  <!-- Canvas where the simple flight runs -->
-  <canvas id="flight" width="800" height="300"></canvas>
+<div style="display:flex; justify-content:space-between; align-items:center; max-width:820px; margin:10px auto; padding:10px 20px; background:#1a1a1a; border-radius:12px; border:2px solid #333;">
+  <h2 style="color:red; margin:0;">Aviator</h2>
+  <div style="color:#00ff00; font-weight:bold;">Balance: <span id="balance">5000</span></div>
+</div>
 
-  <div class="controls">
-    <div class="panel">
-      <div><strong>Autopilot</strong></div>
-      <div class="small">Status: <span id="status">starting...</span></div>
-      <button id="btnToggle">Pause Autopilot</button>
-      <button id="btnCrashNow">Force Crash Now</button>
+<div class="round-history" id="roundHistory"></div>
+
+<div class="wrapper">
+  <canvas id="canvas" width="800" height="250"></canvas>
+
+  <!-- Container 1 -->
+  <div class="container" id="container1">
+    <div class="inner-control">
+      <div class="left-controls">
+        <button id="decBet1" class="adjust-btn">-</button>
+        <div class="bet-display" id="betDisplay1">10</div>
+        <button id="incBet1" class="adjust-btn">+</button>
+      </div>
     </div>
-
-    <div class="panel" style="min-width:380px">
-      <div><strong>Schedule editor</strong></div>
-      <div class="small">Add a scheduled crash for a day (or "Every day"). Time format: HH:MM (24h)</div>
-
-      <div style="margin-top:8px; display:flex; gap:6px; align-items:center;">
-        <select id="daySelect">
-          <option value="every">Every day</option>
-          <option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option>
-          <option value="3">Wednesday</option><option value="4">Thursday</option>
-          <option value="5">Friday</option><option value="6">Saturday</option>
-        </select>
-        <input id="timeInput" type="text" placeholder="HH:MM"/>
-        <input id="wpIndex" type="text" placeholder="waypoint index (0..)" style="width:120px"/>
-        <button id="btnAdd">Add</button>
-      </div>
-
-      <div style="margin-top:8px;">
-        <button id="btnExport">Export JSON</button>
-        <button id="btnImport">Import JSON</button>
-        <input id="importArea" type="text" placeholder="Paste JSON then click Import" style="width:100%" />
-      </div>
-
-      <table id="scheduleTable">
-        <thead><tr><th>Day</th><th>Time</th><th>Waypoint</th><th>Action</th></tr></thead>
-        <tbody></tbody>
-      </table>
+    <div class="inner-control">
+      <button id="autoToggle1" class="action-btn">⚙️ Auto Bet: OFF</button>
+      <button id="cashOut1" class="action-btn">💰 Auto Cash Out</button>
+    </div>
+    <div class="preset-grid">
+      <button class="preset-btn" data-bet="10">10</button>
+      <button class="preset-btn" data-bet="50">50</button>
+    </div>
+    <div class="preset-grid">
+      <button class="preset-btn" data-bet="50">50</button>
+      <button class="preset-btn" data-bet="100">100</button>
+    </div>
+    <div class="inner-control" style="justify-content:flex-end;">
+      <button id="mainAction1" class="right-btn"><span>🎯 Bet 10.00 KES</span></button>
     </div>
   </div>
 
-  <script>
-  /*************************
-   * Simple aviator autopilot + scheduled crash example
-   *
-   * Data model for schedule:
-   * schedule = [
-   *   { id: "uuid", day: "every" | 0..6, time: "HH:MM", waypoint: 1 }
-   * ]
-   *
-   * day: "every" applies to all days; otherwise 0=Sunday..6=Saturday
-   *
-   * Behavior:
-   * - autopilot runs on RAF, plane moves along waypoints
-   * - a scheduler check runs every second and triggers a crash when now matches a schedule entry
-   * - tolerance window: if now is within +/-30 seconds of scheduled minute it will trigger (so minor clock drift won't block)
-   ************************/
+  <!-- Container 2 -->
+  <div class="container" id="container2">
+    <div class="inner-control">
+      <div class="left-controls">
+        <button id="decBet2" class="adjust-btn">-</button>
+        <div class="bet-display" id="betDisplay2">100</div>
+        <button id="incBet2" class="adjust-btn">+</button>
+      </div>
+    </div>
+    <div class="inner-control">
+      <button id="autoToggle2" class="action-btn">⚙️ Auto Bet: OFF</button>
+      <button id="cashOut2" class="action-btn">💰 Auto Cash Out</button>
+    </div>
+    <div class="preset-grid">
+      <button class="preset-btn" data-bet="10">10</button>
+      <button class="preset-btn" data-bet="50">50</button>
+    </div>
+    <div class="preset-grid">
+      <button class="preset-btn" data-bet="50">50</button>
+      <button class="preset-btn" data-bet="100">100</button>
+    </div>
+    <div class="inner-control" style="justify-content:flex-end;">
+      <button id="mainAction2" class="right-btn"><span>🎯 Bet 100.00 KES</span></button>
+    </div>
+  </div>
+</div>
 
-  // --- Utilities ---
-  function uuid4(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); }
+<script>
+const canvas=document.getElementById("canvas"), ctx=canvas.getContext("2d");
+const balanceEl=document.getElementById("balance"), roundHistoryEl=document.getElementById("roundHistory");
+let balance=5000, multiplier=1, crashAt, countdown=6, inCountdown=true, animating=false, crashed=false;
+let flyTextArray=[], rounds=[], stripeOffset=0;
 
-  function pad(n){ return n<10?'0'+n:''+n }
+// Images
+const planeImg=new Image(); planeImg.src="countdown.png";
+const countdownImage=new Image(); countdownImage.src="countdown.png";
 
-  // --- Waypoints (example) ---
-  // For your real demo replace waypoints with actual 3D coordinates or indices.
-  const waypoints = [
-    {x:50, y:150},
-    {x:200, y:60},
-    {x:400, y:120},
-    {x:600, y:40},
-    {x:760, y:160},
-  ];
-
-  // --- State ---
-  const canvas = document.getElementById('flight');
-  const ctx = canvas.getContext('2d');
-  let running = true;
-  let plane = { x: waypoints[0].x, y: waypoints[0].y, speed: 80, // pixels per second
-                targetIndex: 1, crashed:false, crashProgress:0 };
-  let lastTs = performance.now();
-
-  // schedule loaded from localStorage
-  const STORAGE_KEY = 'aviator_schedules_v1';
-  let schedule = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-
-  // tolerance for matching scheduled time (seconds)
-  const SCHEDULE_TOLERANCE = 30;
-
-  // --- Drawing helpers ---
-  function draw() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    // draw path
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#2E8B57';
+// Draw stripes
+function drawStripes(){
+  const gradient=ctx.createLinearGradient(0,0,0,canvas.height);
+  gradient.addColorStop(0,"#222");
+  gradient.addColorStop(0.5,"#333");
+  gradient.addColorStop(1,"#222");
+  ctx.fillStyle=gradient;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  const stripeWidth=20, stripeGap=23;
+  ctx.strokeStyle="rgba(255,255,255,0.05)";
+  ctx.lineWidth=2;
+  for(let x=-canvas.height + (stripeOffset % (stripeWidth+stripeGap)); x<canvas.width; x+=stripeWidth+stripeGap){
     ctx.beginPath();
-    ctx.moveTo(waypoints[0].x, waypoints[0].y);
-    for(let i=1;i<waypoints.length;i++) ctx.lineTo(waypoints[i].x, waypoints[i].y);
+    ctx.moveTo(x,0);
+    ctx.lineTo(x+canvas.height,canvas.height);
     ctx.stroke();
-
-    // draw waypoints
-    for(let i=0;i<waypoints.length;i++){
-      ctx.beginPath();
-      ctx.fillStyle = '#fff';
-      ctx.arc(waypoints[i].x, waypoints[i].y, 6, 0, Math.PI*2);
-      ctx.fill();
-      ctx.strokeStyle='#333';
-      ctx.stroke();
-      ctx.fillStyle='#000';
-      ctx.fillText(i, waypoints[i].x+8, waypoints[i].y+4);
-    }
-
-    // draw plane
-    ctx.save();
-    ctx.translate(plane.x, plane.y);
-    // rotate toward next waypoint
-    let tgt = waypoints[plane.targetIndex];
-    let ang = Math.atan2(tgt.y - plane.y, tgt.x - plane.x);
-    ctx.rotate(ang);
-    // if crashed, fall nose-down
-    if(plane.crashed){
-      ctx.rotate(Math.PI/2 * plane.crashProgress); // rotate gradually to crash pose
-    }
-    // simple triangle plane
-    ctx.beginPath();
-    ctx.moveTo(12,0);
-    ctx.lineTo(-12,-8);
-    ctx.lineTo(-12,8);
-    ctx.closePath();
-    ctx.fillStyle = plane.crashed ? '#b22222' : '#222';
-    ctx.fill();
-    ctx.restore();
-
-    // status text
-    ctx.fillStyle='#000';
-    ctx.fillText('Autopilot: ' + (running ? 'ON' : 'PAUSED') , 8, 14);
-    ctx.fillText('Next waypoint: ' + plane.targetIndex, 8, 30);
   }
+  stripeOffset+=1;
+}
 
-  // --- Movement ---
-  function updateMovement(dt) {
-    if(plane.crashed) {
-      // crash "animation"
-      plane.crashProgress = Math.min(1, plane.crashProgress + dt*0.4);
-      // after crashProgress complete, keep plane on ground (stop movement)
-      return;
+// Beep
+function beep(freq,dur){
+  const ctxAudio=new(window.AudioContext||window.webkitAudioContext)();
+  const osc=ctxAudio.createOscillator();
+  const gain=ctxAudio.createGain();
+  osc.connect(gain); gain.connect(ctxAudio.destination);
+  osc.type="sine"; osc.frequency.value=freq;
+  gain.gain.setValueAtTime(0.1,ctxAudio.currentTime);
+  osc.start(); osc.stop(ctxAudio.currentTime+dur/1000);
+}
+
+// Draw
+function draw(){
+  drawStripes();
+  if(inCountdown){
+    const imgWidth=300,imgHeight=100,imgX=canvas.width/2-imgWidth/2,imgY=canvas.height/2-imgHeight/2;
+    ctx.drawImage(countdownImage,imgX,imgY,imgWidth,imgHeight);
+    const lineWidth=imgWidth*(countdown/6), lineHeight=10;
+    ctx.fillStyle="rgba(255,0,0,0.8)";
+    ctx.fillRect(imgX,imgY+imgHeight-lineHeight-5,lineWidth,lineHeight);
+    ctx.fillStyle="#fff";
+    ctx.font="bold 27px Arial"; ctx.textAlign="center";
+    ctx.fillText("poweredbydenis@2025",canvas.width/2,imgY+imgHeight/2+5);
+    ctx.fillStyle="#fff"; ctx.font="bold 40px Arial";
+    ctx.fillText(countdown,canvas.width/2,imgY+imgHeight/2-20);
+    return;
+  }
+  ctx.font="bold 80px Arial"; ctx.fillStyle=crashed?"#f00":"#fff"; ctx.textAlign="center";
+  ctx.fillText(multiplier.toFixed(2)+"×",canvas.width/2,canvas.height/2);
+  if(!crashed){
+    ctx.strokeStyle="#0f0"; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(0,canvas.height);
+    ctx.lineTo(multiplier*50,canvas.height-multiplier*15); ctx.stroke();
+    const planeX=multiplier*50, planeY=canvas.height-multiplier*15;
+    if(planeImg.complete) ctx.drawImage(planeImg,planeX-20,planeY-20,40,40);
+  }
+  flyTextArray.forEach((text,index)=>{
+    ctx.font="bold 40px Arial"; ctx.fillStyle="white"; ctx.textAlign="center"; ctx.globalAlpha=text.alpha;
+    ctx.fillText(text.msg,canvas.width/2,canvas.height/2-text.y);
+    text.y+=2; text.alpha-=0.02; if(text.alpha<=0) flyTextArray.splice(index,1);
+  });
+  ctx.globalAlpha=1;
+}
+
+// Countdown
+function startCountdown(){
+  crashed=false; inCountdown=true; countdown=6;
+  const interval=setInterval(()=>{
+    countdown--;
+    if(countdown<=0){ clearInterval(interval); inCountdown=false; startRound(); }
+  },1000);
+}
+
+// Round
+function startRound(){
+  crashAt=1.01+Math.random()*3; multiplier=1; crashed=false; animating=true;
+  const ctxAudio=new(window.AudioContext||window.webkitAudioContext)();
+  const osc=ctxAudio.createOscillator(); const gain=ctxAudio.createGain();
+  osc.connect(gain); gain.connect(ctxAudio.destination);
+  osc.type="sine"; osc.frequency.value=300; gain.gain.setValueAtTime(0.05,ctxAudio.currentTime);
+  osc.start();
+  function animate(){
+    if(!animating) return;
+    multiplier+=0.02; osc.frequency.value+=1;
+    if(multiplier>=crashAt){
+      animating=false; crashed=true; osc.stop(); beep(100,400);
+      flyTextArray.push({msg:"Flew Away!",y:0,alpha:1});
+      addRoundToHistory(multiplier.toFixed(2));
+      for(let sys of betSystems){
+        if(sys.autoBet && balance>=sys.bet){ balance-=sys.bet; sys.betPlaced=true; } 
+        else sys.betPlaced=false;
+        sys.updateUI();
+      }
+      setTimeout(()=>{startCountdown();},2000);
     }
+    draw(); if(animating) requestAnimationFrame(animate);
+  }
+  animate();
+}
 
-    let tgt = waypoints[plane.targetIndex];
-    let dx = tgt.x - plane.x, dy = tgt.y - plane.y;
-    let dist = Math.hypot(dx,dy);
-    if(dist < 4) {
-      // reached waypoint -> advance target (loop)
-      plane.targetIndex = (plane.targetIndex + 1) % waypoints.length;
+// Animation loop
+function loop(){ draw(); requestAnimationFrame(loop); }
+loop();
+
+// Round history
+function addRoundToHistory(mult){ rounds.unshift(mult); if(rounds.length>9) rounds.pop(); renderRounds(); }
+function renderRounds(){ roundHistoryEl.innerHTML=''; rounds.forEach(r=>{
+  const div=document.createElement('div'); div.className='round'; div.textContent=r+'×';
+  if(r<2) div.style.background='#2196f3'; else if(r<10) div.style.background='#9c27b0'; else div.style.background='#f44336';
+  div.style.color='white'; roundHistoryEl.appendChild(div);
+});}
+
+// BET SYSTEM
+const betSystems=[];
+function createBetSystem(id,initialBet){
+  let bet=initialBet, betPlaced=false, autoBet=false;
+  const betDisplay=document.getElementById(`betDisplay${id}`);
+  const inc=document.getElementById(`incBet${id}`);
+  const dec=document.getElementById(`decBet${id}`);
+  const main=document.getElementById(`mainAction${id}`);
+  const presetBtns=document.querySelectorAll(`#container${id} .preset-btn`);
+  const autoBtn=document.getElementById(`autoToggle${id}`);
+  const cashBtn=document.getElementById(`cashOut${id}`);
+
+  function updateUI(){
+    betDisplay.textContent=bet;
+    if(betPlaced){
+      main.querySelector('span').textContent = `💰 Cash Out: ${(bet*multiplier).toFixed(2)} KES`;
     } else {
-      let vx = (dx / dist) * plane.speed;
-      let vy = (dy / dist) * plane.speed;
-      plane.x += vx * dt;
-      plane.y += vy * dt;
+      main.querySelector('span').textContent = `🎯 Bet ${bet.toFixed(2)} KES`;
     }
+    autoBtn.textContent=`⚙️ Auto Bet: ${autoBet?"ON":"OFF"}`;
+    balanceEl.textContent=balance.toFixed(2);
   }
 
-  // --- Autopilot loop ---
-  function loop(ts) {
-    const dt = (ts - lastTs) / 1000;
-    lastTs = ts;
-    if(running) updateMovement(dt);
-    draw();
-    requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
+  inc.onclick=()=>{ bet+=10; updateUI(); };
+  dec.onclick=()=>{ bet=Math.max(10,bet-10); updateUI(); };
+  presetBtns.forEach(btn=>btn.onclick=()=>{ bet=Number(btn.dataset.bet); updateUI(); });
 
-  // --- Scheduler: check every second for matches ---
-  setInterval(checkForScheduledCrash, 1000);
-
-  function checkForScheduledCrash(){
-    if(plane.crashed) return; // once crashed ignore until reset
-    const now = new Date();
-    const hh = now.getHours();
-    const mm = now.getMinutes();
-    const sec = now.getSeconds();
-    const today = now.getDay(); // 0..6
-
-    // convert to seconds-from-midnight for tolerance comparison
-    const nowSeconds = hh*3600 + mm*60 + sec;
-
-    for(const entry of schedule){
-      // check day match
-      if(entry.day !== 'every' && Number(entry.day) !== today) continue;
-
-      // parse entry.time "HH:MM"
-      const [eh, em] = (entry.time || '').split(':').map(s=>parseInt(s,10));
-      if(Number.isNaN(eh) || Number.isNaN(em)) continue;
-      const entrySeconds = eh*3600 + em*60;
-
-      if(Math.abs(nowSeconds - entrySeconds) <= SCHEDULE_TOLERANCE){
-        console.log('Scheduled crash triggered', entry);
-        triggerCrashAtSchedule(entry);
-        // if you want one-time schedules then remove here.
-        // For now keep them (so it will crash each time it matches).
-        return;
-      }
-    }
-  }
-
-  // --- Trigger crash ---
-  function triggerCrashAtSchedule(entry){
-    // Option A: crash at a specific waypoint index if provided
-    if(typeof entry.waypoint !== 'undefined' && entry.waypoint !== null){
-      const idx = Math.max(0, Math.min(waypoints.length-1, Number(entry.waypoint) || 0));
-      // snap plane to that waypoint then crash
-      plane.x = waypoints[idx].x;
-      plane.y = waypoints[idx].y;
-      plane.targetIndex = (idx + 1) % waypoints.length;
-      plane.crashed = true;
-      plane.crashProgress = 0;
-      setStatus('CRASHED at waypoint ' + idx);
+  main.onclick=()=>{
+    if(!betPlaced){
+      if(balance>=bet){ balance-=bet; betPlaced=true; updateUI(); }
     } else {
-      // Option B: crash at the plane's current position
-      plane.crashed = true;
-      plane.crashProgress = 0;
-      setStatus('CRASHED at current position');
+      balance+=bet*multiplier; betPlaced=false; updateUI();
+    }
+  };
+
+  autoBtn.onclick=()=>{ autoBet=!autoBet; updateUI(); };
+  cashBtn.onclick=()=>{ if(betPlaced){ balance+=bet*multiplier; betPlaced=false; updateUI(); } };
+
+  function liveUpdate(){
+    if(betPlaced && animating){
+      main.querySelector('span').textContent = `💰 Cash Out: ${(bet*multiplier).toFixed(2)} KES`;
+      requestAnimationFrame(liveUpdate);
+    } else {
+      setTimeout(liveUpdate,50); // Check periodically if bet is placed
     }
   }
+  liveUpdate();
 
-  // --- Controls & editor UI ---
-  const statusEl = document.getElementById('status');
-  function setStatus(s){ statusEl.textContent = s; }
+  updateUI();
+  betSystems.push({id, bet, betPlaced, autoBet, updateUI});
+}
 
-  document.getElementById('btnToggle').addEventListener('click', ()=>{
-    running = !running;
-    document.getElementById('btnToggle').textContent = running ? 'Pause Autopilot' : 'Resume Autopilot';
-  });
+createBetSystem(1,10);
+createBetSystem(2,100);
+startCountdown();
+</script>
 
-  document.getElementById('btnCrashNow').addEventListener('click', ()=>{
-    triggerCrashAtSchedule({ waypoint: plane.targetIndex });
-  });
+<footer style="
+  background:#1a1a1a;
+  color:#fff;
+  text-align:center;
+  padding:15px 0;
+  border-top:2px solid #333;
+  margin-top:20px;
+  font-size:14px;
+">
+  &copy; Denis Muia 2025. All rights reserved.
+</footer>
 
-  const daySelect = document.getElementById('daySelect');
-  const timeInput = document.getElementById('timeInput');
-  const wpIndexInput = document.getElementById('wpIndex');
-  const scheduleTableBody = document.querySelector('#scheduleTable tbody');
-
-  function refreshTable(){
-    scheduleTableBody.innerHTML = '';
-    schedule.forEach(e => {
-      const tr = document.createElement('tr');
-      const dayText = (e.day === 'every') ? 'Every day' : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][Number(e.day)];
-      tr.innerHTML = `<td>${dayText}</td><td>${e.time}</td><td>${e.waypoint}</td>
-        <td>
-          <button data-id="${e.id}" class="del">Delete</button>
-        </td>`;
-      scheduleTableBody.appendChild(tr);
-    });
-  }
-
-  scheduleTableBody.addEventListener('click', (ev)=>{
-    if(ev.target.classList.contains('del')){
-      const id = ev.target.getAttribute('data-id');
-      schedule = schedule.filter(x=>x.id !== id);
-      saveSchedule();
-      refreshTable();
-    }
-  });
-
-  document.getElementById('btnAdd').addEventListener('click', ()=>{
-    const day = daySelect.value;
-    const time = (timeInput.value || '').trim();
-    const wp = wpIndexInput.value.trim() === '' ? null : Number(wpIndexInput.value.trim());
-    // basic validation: HH:MM
-    if(!/^\d{1,2}:\d{2}$/.test(time)){
-      alert('Time must be HH:MM (24-hour). Example: 14:30');
-      return;
-    }
-    // normalize time to HH:MM
-    const parts = time.split(':');
-    const hh = Math.max(0, Math.min(23, Number(parts[0])));
-    const mm = Math.max(0, Math.min(59, Number(parts[1])));
-    const normalized = pad(hh) + ':' + pad(mm);
-
-    const entry = { id: uuid4(), day: day, time: normalized, waypoint: wp };
-    schedule.push(entry);
-    saveSchedule();
-    refreshTable();
-    timeInput.value = ''; wpIndexInput.value = '';
-  });
-
-  document.getElementById('btnExport').addEventListener('click', ()=>{
-    const json = JSON.stringify(schedule, null, 2);
-    // create a quick download
-    const blob = new Blob([json], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'aviator-schedule.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  document.getElementById('btnImport').addEventListener('click', ()=>{
-    const txt = document.getElementById('importArea').value.trim();
-    if(!txt) { alert('Paste schedule JSON into the input box first.'); return; }
-    try {
-      const parsed = JSON.parse(txt);
-      if(!Array.isArray(parsed)) throw new Error('expected array');
-      // basic validation for entries
-      parsed.forEach(p => {
-        if(!p.id) p.id = uuid4();
-        if(!p.time || !/^\d{1,2}:\d{2}$/.test(p.time)) throw new Error('invalid time on some entry');
-        if(typeof p.day === 'undefined') p.day = 'every';
-      });
-      schedule = parsed;
-      saveSchedule();
-      refreshTable();
-      alert('Imported schedule OK');
-    } catch(err){
-      alert('Invalid JSON: ' + err.message);
-    }
-  });
-
-  function saveSchedule(){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(schedule));
-  }
-
-  // On page load: ensure schedule is valid and render table
-  (function init(){
-    // normalize entries
-    schedule = schedule.map(e => {
-      if(!e.id) e.id = uuid4();
-      if(!e.day) e.day = 'every';
-      if(e.time && /^\d{1,2}:\d{2}$/.test(e.time)){
-        const parts = e.time.split(':');
-        e.time = pad(Math.max(0, Math.min(23, Number(parts[0])))) + ':' + pad(Math.max(0, Math.min(59, Number(parts[1]))));
-      }
-      return e;
-    });
-    refreshTable();
-    setStatus('Autopilot: running');
-  })();
-
-  // optional: function to reset crash (for testing)
-  window.resetPlane = function(){
-    plane.crashed = false;
-    plane.crashProgress = 0;
-    plane.x = waypoints[0].x;
-    plane.y = waypoints[0].y;
-    plane.targetIndex = 1;
-    setStatus('Autopilot: running');
-  }
-
-  // helper: display next scheduled event in console
-  function nextScheduled(){
-    if(schedule.length===0) return null;
-    // naive next event search within next 7 days (for demo)
-    const now = new Date();
-    let best=null, bestDiff=Infinity;
-    for(const e of schedule){
-      for(let dOffset=0; dOffset<7; dOffset++){
-        const dayCandidate = new Date(now);
-        dayCandidate.setDate(now.getDate() + dOffset);
-        const dayIdx = dayCandidate.getDay();
-        if(e.day !== 'every' && Number(e.day) !== dayIdx) continue;
-        const [hh,mm] = e.time.split(':').map(x=>Number(x));
-        dayCandidate.setHours(hh, mm, 0, 0);
-        const diff = dayCandidate - now;
-        if(diff >= 0 && diff < bestDiff){ bestDiff = diff; best = {entry:e, when:dayCandidate}; }
-      }
-    }
-    return best;
-  }
-
-  // Optional: show upcoming schedule in console each minute
-  setInterval(()=> {
-    const nxt = nextScheduled();
-    if(nxt) console.log('Next scheduled crash at', nxt.when.toString(), nxt.entry);
-  }, 60000);
-
-  </script>
 </body>
-</html>
+  </html>
