@@ -201,7 +201,7 @@ form.addEventListener('submit', function(e) {
   // Owner login
   if((input === OWNER.username || input === OWNER.email) && pass === OWNER.password) {
     sessionStorage.setItem('ownerLoggedIn','true'); // mark owner logged in
-    window.location.href = "not found"; // link to your owner dashboard
+    window.location.href = "owner-dashboard.html"; // link to your owner dashboard
     return;
   }
 
