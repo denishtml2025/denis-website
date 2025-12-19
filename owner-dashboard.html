@@ -72,18 +72,19 @@ body {
 <!-- ✅ Protect the page -->
 <script>
   // Check if owner is logged in
-  if (localStorage.getItem("isOwnerLoggedIn") !== "true") {
+  if (sessionStorage.getItem("ownerLoggedIn") !== "true") {
     alert("Please log in first.");
     window.location.href = "login.html";
   }
 
   // Logout function
   function logout() {
-    localStorage.removeItem("isOwnerLoggedIn");
+    sessionStorage.removeItem("ownerLoggedIn");
     alert("You have been logged out.");
     window.location.href = "login.html";
   }
 </script>
+
 
 <!-- Sidebar -->
 <div class="sidebar">
